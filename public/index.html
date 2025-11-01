@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reference Check - Conversational</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .progress {
+            background: rgba(255, 255, 255, 0.2);
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: white;
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #f7f9fc;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.system {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+
+        .message.system .message-bubble {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .status.saving {
+            color: #667eea;
+        }
+
+        .status.saved {
+            color: #10b981;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 16px;
+            margin: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .submit-button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 16px auto;
+            display: block;
+            transition: transform 0.2s;
+        }
+
+        .submit-button:hover {
+            transform: scale(1.05);
+        }
+
+        .complete-message {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .complete-message h2 {
+            color: #10b981;
+            margin-bottom: 16px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Reference Check</h1>
+            <p id="templateName">Loading...</p>
+            <button id="newReferenceBtn" onclick="createNewReference()" style="margin: 10px auto; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                ➕ Start New Reference
+            </button>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="loadingState" class="loading">
+            <p>Loading conversation...</p>
+        </div>
+
+        <div id="errorState" class="error hidden"></div>
+
+        <div id="chatState" class="hidden" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <div class="chat-container" id="chatContainer"></div>
+            
+            <div id="inputArea" class="input-container">
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        class="input-field" 
+                        placeholder="Type your answer..."
+                        autocomplete="off"
+                    >
+                    <button id="sendButton" class="send-button">→</button>
+                </div>
+                <div id="status" class="status"></div>
+            </div>
+
+            <button id="submitButton" class="submit-button hidden">Submit Reference</button>
+        </div>
+
+        <div id="completeState" class="complete-message hidden">
+            <h2>✓ Thank You!</h2>
+            <p>Your reference has been submitted successfully.</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5001/api'
+            : 'https://referencecheck-backend.onrender.com/api';
+        
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token') || 'bf0d95058ea51dd187b19d0cbed1f4676757b5c988c738762e17b6778227d47c'; // fallback for testing
+
+        // State
+        let messageQueue = [];
+        let currentQuestionIndex = 0;
+        let template = null;
+        let existingAnswers = {};
+
+        // DOM elements
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const chatState = document.getElementById('chatState');
+        const completeState = document.getElementById('completeState');
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const submitButton = document.getElementById('submitButton');
+        const progressBar = document.getElementById('progressBar');
+        const templateName = document.getElementById('templateName');
+        const status = document.getElementById('status');
+        const inputArea = document.getElementById('inputArea');
+
+        // Initialize
+        async function init() {
+            try {
+                const response = await fetch(`${API_BASE}/public/conversation/init?token=${token}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to initialize');
+                }
+
+                template = data.template;
+                messageQueue = data.message_queue;
+                existingAnswers = data.existing_answers;
+
+                templateName.textContent = template.name;
+                
+                // Hide loading, show chat
+                loadingState.classList.add('hidden');
+                chatState.classList.remove('hidden');
+
+                // Ask first unanswered question
+                askNextQuestion();
+                updateProgress();
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function askNextQuestion() {
+            // Find next unanswered question
+            const nextQuestion = messageQueue.find((q, idx) => {
+                return idx >= currentQuestionIndex && !q.answered;
+            });
+
+            if (nextQuestion) {
+                currentQuestionIndex = messageQueue.indexOf(nextQuestion);
+                addMessage('system', nextQuestion.text);
+                
+                // Check if all required questions are answered
+                if (allRequiredAnswered()) {
+                    submitButton.classList.remove('hidden');
+                }
+            } else {
+                // All questions answered
+                inputArea.classList.add('hidden');
+                submitButton.classList.remove('hidden');
+            }
+        }
+
+        function addMessage(type, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const answer = messageInput.value.trim();
+            if (!answer) return;
+
+            const currentQuestion = messageQueue[currentQuestionIndex];
+            
+            // Add user message to chat
+            addMessage('user', answer);
+            messageInput.value = '';
+            sendButton.disabled = true;
+            status.textContent = 'Saving...';
+            status.className = 'status saving';
+
+            try {
+                // Save to backend
+                const response = await fetch(`${API_BASE}/public/conversation/draft`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: token,
+                        turn: {
+                            question_id: currentQuestion.id,
+                            answer: answer,
+                            message: currentQuestion.text,
+                            index: currentQuestionIndex,
+                            role: 'referee'
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save answer');
+                }
+
+                status.textContent = '✓ Saved';
+                status.className = 'status saved';
+                setTimeout(() => { status.textContent = ''; }, 2000);
+
+                // Mark as answered
+                currentQuestion.answered = true;
+                currentQuestionIndex++;
+                updateProgress();
+
+                // Ask next question
+                setTimeout(() => {
+                    askNextQuestion();
+                    sendButton.disabled = false;
+                }, 500);
+
+            } catch (error) {
+                status.textContent = 'Failed to save';
+                status.className = 'status';
+                sendButton.disabled = false;
+                alert('Failed to save answer. Please try again.');
+            }
+        }
+
+        async function submitReference() {
+            if (!confirm('Submit your reference? You won\'t be able to edit it after submission.')) {
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+
+            try {
+                const response = await fetch(`${API_BASE}/public/conversation/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to submit');
+                }
+
+                // Show success
+                chatState.classList.add('hidden');
+                completeState.classList.remove('hidden');
+
+            } catch (error) {
+                alert('Failed to submit reference. Please try again.');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Reference';
+            }
+        }
+
+        function updateProgress() {
+            const answered = messageQueue.filter(q => q.answered).length;
+            const total = messageQueue.length;
+            const percentage = (answered / total) * 100;
+            progressBar.style.width = `${percentage}%`;
+        }
+
+        function allRequiredAnswered() {
+            return messageQueue
+                .filter(q => q.required)
+                .every(q => q.answered);
+        }
+
+        function showError(message) {
+            loadingState.classList.add('hidden');
+            errorState.textContent = message;
+            errorState.classList.remove('hidden');
+        }
+
+        // Create new reference
+        async function createNewReference() {
+            if (!confirm('Create a new reference? This will generate a fresh token.')) return;
+            
+            const btn = document.getElementById('newReferenceBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Creating...';
+
+            try {
+                const response = await fetch(`${API_BASE}/public/conversation/create-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create new reference');
+                }
+                
+                // Redirect to new token URL
+                window.location.href = `${window.location.origin}${window.location.pathname}?token=${data.token}`;
+            } catch (error) {
+                alert('Failed to create new reference: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '➕ Start New Reference';
+            }
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        submitButton.addEventListener('click', submitReference);
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
+
