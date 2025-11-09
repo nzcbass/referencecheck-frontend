@@ -496,12 +496,14 @@ export const RequestList: React.FC<RequestListProps> = ({
     const buttonRect = button.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const spaceBelow = viewportHeight - buttonRect.bottom;
-    const menuHeight = 300; // Approximate menu height
+    const menuHeight = 400; // Approximate menu height (increased for safety)
 
     // Store position for this specific menu
+    // Open upward if less than menuHeight space below OR in bottom 40% of viewport
+    const isNearBottom = buttonRect.bottom > viewportHeight * 0.6;
     setMenuPositions(prev => ({
       ...prev,
-      [refereeId]: spaceBelow < menuHeight ? 'up' : 'down'
+      [refereeId]: (spaceBelow < menuHeight || isNearBottom) ? 'up' : 'down'
     }));
     
     setOpenRefereeMenuId(refereeId);

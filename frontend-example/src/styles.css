@@ -304,6 +304,8 @@ button {
 
 .table-container {
   overflow-x: auto;
+  padding-bottom: 200px;
+  margin-bottom: -150px;
 }
 
 .requests-table {
