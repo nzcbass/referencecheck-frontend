@@ -12,6 +12,12 @@
 
 import React, { useState, useEffect } from 'react';
 
+interface ConversationTurn {
+  type: string;
+  content: string;
+  created_at: string;
+}
+
 interface ReviewItem {
   answer_id: string;
   question_index: number;
@@ -22,6 +28,7 @@ interface ReviewItem {
   polished_answer: string;
   word_count: number;
   answered_at: string;
+  conversation_turns?: ConversationTurn[];
 }
 
 interface ConversationalReviewProps {
@@ -287,7 +294,7 @@ export const ConversationalReview: React.FC<ConversationalReviewProps> = ({
                 <textarea
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  spellCheck={true}
+                  spellCheck={item.answer_type !== 'number' && item.answer_type !== 'rating'}
                   rows={6}
                   style={{
                     width: '100%',
@@ -364,6 +371,68 @@ export const ConversationalReview: React.FC<ConversationalReviewProps> = ({
                 >
                   {item.polished_answer}
                 </div>
+
+                {/* Show conversation history if there were follow-ups */}
+                {item.conversation_turns && item.conversation_turns.length > 2 && (
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      padding: '16px',
+                      backgroundColor: '#f0f4ff',
+                      border: '1px solid #c7d2fe',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#4338ca',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      Conversation History:
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {item.conversation_turns.map((turn, turnIndex) => {
+                        // Skip the initial question and final acknowledgment
+                        if (turn.type === 'question' && turnIndex === 0) return null;
+                        if (turn.type === 'acknowledgment') return null;
+
+                        const isUserAnswer = turn.type === 'user_answer';
+                        const isClarification = turn.type === 'clarification';
+
+                        return (
+                          <div
+                            key={turnIndex}
+                            style={{
+                              padding: '10px 12px',
+                              backgroundColor: isUserAnswer ? '#ffffff' : '#e0e7ff',
+                              border: `1px solid ${isUserAnswer ? '#d1d5db' : '#a5b4fc'}`,
+                              borderRadius: '4px',
+                              fontSize: '13px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                color: isUserAnswer ? '#6b7280' : '#4338ca',
+                                marginBottom: '4px',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {isUserAnswer ? 'Your Response:' : isClarification ? 'Follow-up:' : 'System:'}
+                            </div>
+                            <div style={{ color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                              {turn.content}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div
                   style={{
