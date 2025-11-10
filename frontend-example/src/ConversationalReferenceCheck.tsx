@@ -3,12 +3,14 @@
  * Parent component that orchestrates the conversational reference check flow
  *
  * Flow:
- * 1. ConversationalChat - Answer questions one by one
- * 2. ConversationalReview - Review and edit all answers
- * 3. Completion - Thank you message
+ * 1. RefereeAuthorization - Consent form (new step)
+ * 2. ConversationalChat - Answer questions one by one
+ * 3. ConversationalReview - Review and edit all answers
+ * 4. Completion - Thank you message
  */
 
 import React, { useState } from 'react';
+import { RefereeAuthorization } from './RefereeAuthorization';
 import { ConversationalChat } from './ConversationalChat';
 import { ConversationalReview } from './ConversationalReview';
 
@@ -17,13 +19,18 @@ interface ConversationalReferenceCheckProps {
   apiUrl?: string;
 }
 
-type Step = 'chat' | 'review' | 'complete';
+type Step = 'authorization' | 'chat' | 'review' | 'complete';
 
 export const ConversationalReferenceCheck: React.FC<
   ConversationalReferenceCheckProps
 > = ({ token, apiUrl = 'http://localhost:5001/api' }) => {
-  const [currentStep, setCurrentStep] = useState<Step>('chat');
+  const [currentStep, setCurrentStep] = useState<Step>('authorization');
   const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const handleAuthorizationComplete = () => {
+    // After authorization, move to chat
+    setCurrentStep('chat');
+  };
 
   const handleSessionIdChange = (newSessionId: string) => {
     setSessionId(newSessionId);
@@ -42,6 +49,16 @@ export const ConversationalReferenceCheck: React.FC<
   const handleBackToChat = () => {
     setCurrentStep('chat');
   };
+
+  if (currentStep === 'authorization') {
+    return (
+      <RefereeAuthorization
+        token={token}
+        apiUrl={apiUrl}
+        onAuthorizationComplete={handleAuthorizationComplete}
+      />
+    );
+  }
 
   if (currentStep === 'complete') {
     return (
