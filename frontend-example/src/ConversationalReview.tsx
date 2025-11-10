@@ -356,45 +356,29 @@ export const ConversationalReview: React.FC<ConversationalReviewProps> = ({
             ) : (
               // Display Mode
               <div>
+                {/* Always show conversation history in purple box for all responses */}
                 <div
                   style={{
                     padding: '16px',
-                    backgroundColor: '#f9fafb',
-                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#f0f4ff',
+                    border: '1px solid #c7d2fe',
                     borderRadius: '6px',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    lineHeight: '1.6',
-                    fontSize: '14px',
-                    color: '#374151',
                   }}
                 >
-                  {item.polished_answer}
-                </div>
-
-                {/* Show conversation history if there were follow-ups */}
-                {item.conversation_turns && item.conversation_turns.length > 2 && (
                   <div
                     style={{
-                      marginTop: '16px',
-                      padding: '16px',
-                      backgroundColor: '#f0f4ff',
-                      border: '1px solid #c7d2fe',
-                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#4338ca',
+                      marginBottom: '12px',
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#4338ca',
-                        marginBottom: '12px',
-                      }}
-                    >
-                      Conversation History:
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {item.conversation_turns.map((turn, turnIndex) => {
+                    Conversation History:
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {item.conversation_turns && item.conversation_turns.length > 0 ? (
+                      // Show all conversation turns
+                      item.conversation_turns.map((turn, turnIndex) => {
                         // Skip the initial question and final acknowledgment
                         if (turn.type === 'question' && turnIndex === 0) return null;
                         if (turn.type === 'acknowledgment') return null;
@@ -429,10 +413,36 @@ export const ConversationalReview: React.FC<ConversationalReviewProps> = ({
                             </div>
                           </div>
                         );
-                      })}
-                    </div>
+                      })
+                    ) : (
+                      // If no conversation turns available, show the polished answer
+                      <div
+                        style={{
+                          padding: '10px 12px',
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: '#6b7280',
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Your Response:
+                        </div>
+                        <div style={{ color: '#374151', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                          {item.polished_answer}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 <div
                   style={{
