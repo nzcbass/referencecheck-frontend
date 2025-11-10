@@ -33,6 +33,8 @@ export const RefereeAuthorization: React.FC<RefereeAuthorizationProps> = ({
   const [signature, setSignature] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [declining, setDeclining] = useState(false);
+  const [declined, setDeclined] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -103,6 +105,37 @@ export const RefereeAuthorization: React.FC<RefereeAuthorizationProps> = ({
     }
   };
 
+  const handleDecline = async () => {
+    if (!confirm('Are you sure you do not wish to provide a reference? The hiring company will be notified.')) {
+      return;
+    }
+
+    setDeclining(true);
+    try {
+      const response = await fetch(`${apiUrl}/public/referee-authorization/decline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          user_agent: navigator.userAgent,
+          declined_at: new Date().toISOString(),
+        }),
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok) {
+        setDeclined(true);
+      } else {
+        alert(`Error: ${responseData.error || 'Failed to record decline'}`);
+      }
+    } catch (err) {
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      setDeclining(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{
@@ -116,6 +149,29 @@ export const RefereeAuthorization: React.FC<RefereeAuthorizationProps> = ({
       }}>
         <h2>Loading...</h2>
         <p>Please wait while we load your consent form.</p>
+      </div>
+    );
+  }
+
+  if (declined) {
+    return (
+      <div style={{
+        maxWidth: '600px',
+        margin: '50px auto',
+        padding: '40px',
+        textAlign: 'center',
+        background: '#f0f9ff',
+        border: '2px solid #3b82f6',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}>
+        <h2 style={{ color: '#1e40af', marginTop: 0 }}>Thank You for Your Time</h2>
+        <p style={{ fontSize: '16px', lineHeight: '1.6', marginBottom: '20px' }}>
+          We've notified {data?.recruiting_company || 'the hiring company'} that you do not wish to be a reference.
+        </p>
+        <p style={{ marginTop: '20px', fontSize: '14px', color: '#666' }}>
+          You may now close this window.
+        </p>
       </div>
     );
   }
@@ -188,14 +244,14 @@ export const RefereeAuthorization: React.FC<RefereeAuthorizationProps> = ({
             border: '1px solid #e5e7eb'
           }}>
             <h3 style={{ marginTop: 0, color: '#1f2937', fontSize: '18px' }}>
-              4. Consent to Provide Information
+              1. Consent to Provide Information
             </h3>
             <p style={{ lineHeight: '1.7', marginBottom: '20px' }}>
               I understand that I am being asked to provide information about <strong>{data.candidate_name}</strong> for the purpose of assessing their suitability for employment or engagement with <strong>{data.recruiting_company}</strong>. I confirm that all information I provide will be true and accurate to the best of my knowledge.
             </p>
 
             <h3 style={{ marginTop: '20px', color: '#1f2937', fontSize: '18px' }}>
-              5. Consent to Collection and Use of Information
+              2. Consent to Collection and Use of Information
             </h3>
             <p style={{ lineHeight: '1.7', marginBottom: '10px' }}>
               I understand that my responses, including opinions and factual information about the candidate, will be collected and stored by <strong>{data.recruiting_company}</strong> for the purpose of completing a reference check.
@@ -210,28 +266,28 @@ export const RefereeAuthorization: React.FC<RefereeAuthorizationProps> = ({
             </ul>
 
             <h3 style={{ marginTop: '20px', color: '#1f2937', fontSize: '18px' }}>
-              6. Consent to Disclose Information
+              3. Consent to Disclose Information
             </h3>
             <p style={{ lineHeight: '1.7', marginBottom: '20px' }}>
               I consent to <strong>{data.recruiting_company}</strong> disclosing my reference responses to the hiring organisation, the candidate (where required), and any third-party service providers engaged to perform the reference process on their behalf.
             </p>
 
             <h3 style={{ marginTop: '20px', color: '#1f2937', fontSize: '18px' }}>
-              7. Data Storage & Retention
+              4. Data Storage & Retention
             </h3>
             <p style={{ lineHeight: '1.7', marginBottom: '20px' }}>
               I understand that my reference responses and contact information will be securely stored in accordance with <strong>{data.recruiting_company}</strong> privacy policy and may be retained for audit, compliance, or quality assurance purposes.
             </p>
 
             <h3 style={{ marginTop: '20px', color: '#1f2937', fontSize: '18px' }}>
-              8. Right to Withdraw Consent
+              5. Right to Withdraw Consent
             </h3>
             <p style={{ lineHeight: '1.7', marginBottom: '20px' }}>
               I acknowledge that I may withdraw my consent to the collection and use of my information at any time by contacting <strong>{data.contact_email}</strong>, though this may affect the ability to complete the reference process.
             </p>
 
             <h3 style={{ marginTop: '20px', color: '#1f2937', fontSize: '18px' }}>
-              9. Acknowledgment
+              6. Acknowledgment
             </h3>
             <p style={{ lineHeight: '1.7', marginBottom: '0' }}>
               I have read and understood the information above and consent to participate as a referee. I understand that my participation is voluntary.
@@ -240,7 +296,7 @@ export const RefereeAuthorization: React.FC<RefereeAuthorizationProps> = ({
 
           <div style={{ marginBottom: '25px' }}>
             <h3 style={{ marginTop: 0, color: '#1f2937', fontSize: '18px' }}>
-              10. Signature Section
+              7. Signature Section
             </h3>
             <label style={{
               display: 'block',
@@ -307,34 +363,66 @@ export const RefereeAuthorization: React.FC<RefereeAuthorizationProps> = ({
             </label>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting || !signature.trim() || !agreed}
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: submitting || !signature.trim() || !agreed ? '#9ca3af' : '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '18px',
-              fontWeight: '600',
-              cursor: submitting || !signature.trim() || !agreed ? 'not-allowed' : 'pointer',
-              transition: 'background-color 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (!submitting && signature.trim() && agreed) {
-                e.currentTarget.style.background = '#1d4ed8';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!submitting && signature.trim() && agreed) {
-                e.currentTarget.style.background = '#2563eb';
-              }
-            }}
-          >
-            {submitting ? '⏳ Submitting...' : '✅ I Consent - Proceed to Reference Questions'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              type="submit"
+              disabled={submitting || declining || !signature.trim() || !agreed}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: submitting || declining || !signature.trim() || !agreed ? '#9ca3af' : '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '18px',
+                fontWeight: '600',
+                cursor: submitting || declining || !signature.trim() || !agreed ? 'not-allowed' : 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!submitting && !declining && signature.trim() && agreed) {
+                  e.currentTarget.style.background = '#1d4ed8';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!submitting && !declining && signature.trim() && agreed) {
+                  e.currentTarget.style.background = '#2563eb';
+                }
+              }}
+            >
+              {submitting ? '⏳ Submitting...' : '✅ I Consent - Proceed to Reference Questions'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDecline}
+              disabled={submitting || declining}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: submitting || declining ? '#d1d5db' : '#ffffff',
+                color: '#dc2626',
+                border: '2px solid #dc2626',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: submitting || declining ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!submitting && !declining) {
+                  e.currentTarget.style.background = '#fee2e2';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!submitting && !declining) {
+                  e.currentTarget.style.background = '#ffffff';
+                }
+              }}
+            >
+              {declining ? '⏳ Processing...' : '❌ I Don\'t Consent'}
+            </button>
+          </div>
         </form>
 
         <div style={{
