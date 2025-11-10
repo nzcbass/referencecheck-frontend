@@ -16,7 +16,7 @@ const USER_ID = '10242198-4ee0-4540-8cfd-25343df1f41d'; // From test data
 const TEMPLATE_ID = '17f28d64-e746-4d06-8949-9335bb4c1740'; // From test data
 
 // Switch between local development and production
-const API_URL = process.env.NODE_ENV === 'production' ? 'https://referencecheck-backend-e485f62r5-brindle-c06e9d97.vercel.app/api' : 'http://localhost:5001/api';
+const API_URL = process.env.NODE_ENV === 'production' ? 'https://api-ref.getbrindleai.com/api' : 'http://localhost:5001/api';
 
 function App() {
   return (

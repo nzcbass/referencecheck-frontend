@@ -16,7 +16,7 @@ const RefereePage: React.FC<RefereePageProps> = ({ apiUrl }) => {
   const [error, setError] = useState<string>('');
   
   const API_URL = apiUrl || (process.env.NODE_ENV === 'production'
-    ? 'https://referencecheck-backend-e485f62r5-brindle-c06e9d97.vercel.app/api'
+    ? 'https://api-ref.getbrindleai.com/api'
     : 'http://localhost:5001/api');
 
   useEffect(() => {
@@ -24,13 +24,11 @@ const RefereePage: React.FC<RefereePageProps> = ({ apiUrl }) => {
       setError('No token provided. Please use the link from your email.');
     }
 
-    // Hide any platform UI elements and ensure full isolation
-    document.body.style.overflow = 'hidden';
+    // Reset body styles for proper scrolling
     document.body.style.margin = '0';
     document.body.style.padding = '0';
 
     return () => {
-      document.body.style.overflow = '';
       document.body.style.margin = '';
       document.body.style.padding = '';
     };
@@ -72,14 +70,10 @@ const RefereePage: React.FC<RefereePageProps> = ({ apiUrl }) => {
   return (
     <div style={{
       minHeight: '100vh',
-      width: '100vw',
+      width: '100%',
       background: '#f7fafc',
       padding: '20px',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      overflow: 'auto',
-      zIndex: 9999
+      overflow: 'auto'
     }}>
       <ConversationalReferenceCheck
         token={token}

@@ -26,7 +26,7 @@ const RefereeConversation: React.FC<RefereeConversationProps> = ({ token, onBack
   const hasInitialized = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const API_URL = process.env.NODE_ENV === 'production' ? 'https://referencecheck-backend-e485f62r5-brindle-c06e9d97.vercel.app/api' : 'http://localhost:5001/api';
+  const API_URL = process.env.NODE_ENV === 'production' ? 'https://api-ref.getbrindleai.com/api' : 'http://localhost:5001/api';
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {

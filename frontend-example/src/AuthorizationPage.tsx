@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 const API_URL = process.env.NODE_ENV === 'production'
-  ? 'https://referencecheck-backend-e485f62r5-brindle-c06e9d97.vercel.app/api'
+  ? 'https://api-ref.getbrindleai.com/api'
   : 'http://localhost:5001/api';
 
 const AuthorizationPage: React.FC = () => {
