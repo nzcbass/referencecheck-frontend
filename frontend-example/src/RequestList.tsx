@@ -484,8 +484,24 @@ export const RequestList: React.FC<RequestListProps> = ({
     return sortDirection === 'asc' ? ' ▲' : ' ▼';
   };
 
-  const handleRefereeClick = (referee: Referee) => {
-    setEditingReferee({ ...referee }); // Clone to allow editing without affecting original
+  const handleRefereeClick = async (referee: Referee) => {
+    try {
+      // Fetch full referee details including consent data
+      const response = await fetch(`${apiUrl}/referees/${referee.id}`);
+      const data = await response.json();
+
+      if (response.ok && data.referee) {
+        // Use the detailed referee data which includes consent fields
+        setEditingReferee(data.referee);
+      } else {
+        // Fallback to local data if fetch fails
+        setEditingReferee({ ...referee });
+      }
+    } catch (error) {
+      console.error('Failed to fetch referee details:', error);
+      // Fallback to local data if fetch fails
+      setEditingReferee({ ...referee });
+    }
   };
 
   const handleRefereeMenuClick = (refereeId: string, event: React.MouseEvent) => {
