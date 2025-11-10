@@ -268,15 +268,43 @@ export const ReferenceReport: React.FC<ReferenceReportProps> = ({
                 // Find the question by ID (not key)
                 const question = data.template.questions.find(q => q.id === questionKey);
                 const questionText = question?.text || questionKey;
-                
+
+                // Check if answer has follow-up structure
+                const hasFollowUp = typeof answer === 'object' && answer !== null &&
+                                   'original_answer' in answer && 'follow_up_answer' in answer;
+
                 return (
                   <div key={questionKey} className="qa-item">
                     <div className="question-label">
                       <strong>Q{index + 1}:</strong> {questionText}
                     </div>
-                    <div className="answer-text">
-                      {typeof answer === 'object' ? JSON.stringify(answer, null, 2) : answer}
-                    </div>
+                    {hasFollowUp ? (
+                      <div>
+                        <div className="answer-text">
+                          {answer.original_answer}
+                        </div>
+                        <div className="follow-up-section" style={{ marginTop: '12px' }}>
+                          <div className="follow-up-label" style={{
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: '#667eea',
+                            marginBottom: '8px'
+                          }}>
+                            Follow-up Response:
+                          </div>
+                          <div className="answer-text" style={{
+                            background: '#f0f4ff',
+                            borderLeft: '3px solid #667eea'
+                          }}>
+                            {answer.follow_up_answer}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="answer-text">
+                        {typeof answer === 'object' ? JSON.stringify(answer, null, 2) : answer}
+                      </div>
+                    )}
                   </div>
                 );
               })}
