@@ -908,6 +908,9 @@ export const RequestList: React.FC<RequestListProps> = ({
     if (status === 'bounced') {
       return 'status-bounced';
     }
+    if (status === 'declined') {
+      return 'status-bounced'; // Red styling for declined
+    }
     if (status === 'started') {
       return 'status-sent';
     }
@@ -1296,15 +1299,17 @@ export const RequestList: React.FC<RequestListProps> = ({
                               ? 'Completed'
                               : referee.status === 'bounced'
                                 ? 'Bounced'
-                                : isReminder
-                                  ? 'Reminder'
-                                  : referee.status === 'draft_ref' || referee.status === 'pending'
-                                    ? 'Pending'
-                                    : referee.status === 'started'
-                                      ? 'Started'
-                                      : referee.status === 'sent'
-                                        ? 'Sent'
-                                        : referee.status;
+                                : referee.status === 'declined'
+                                  ? 'Ref Declined'
+                                  : isReminder
+                                    ? 'Reminder'
+                                    : referee.status === 'draft_ref' || referee.status === 'pending'
+                                      ? 'Pending'
+                                      : referee.status === 'started'
+                                        ? 'Started'
+                                        : referee.status === 'sent'
+                                          ? 'Sent'
+                                          : referee.status;
                             
                             return (
                               <>
