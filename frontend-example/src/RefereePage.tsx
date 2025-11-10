@@ -68,18 +68,10 @@ const RefereePage: React.FC<RefereePageProps> = ({ apiUrl }) => {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      width: '100%',
-      background: '#f7fafc',
-      padding: '20px',
-      overflow: 'auto'
-    }}>
-      <ConversationalReferenceCheck
-        token={token}
-        apiUrl={API_URL}
-      />
-    </div>
+    <ConversationalReferenceCheck
+      token={token}
+      apiUrl={API_URL}
+    />
   );
 };
 

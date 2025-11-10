@@ -161,13 +161,21 @@ export const ConversationalReferenceCheck: React.FC<
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '20px auto', padding: '20px' }}>
-      <ConversationalChat
-        token={token}
-        apiUrl={apiUrl}
-        onComplete={handleChatComplete}
-        onSessionIdChange={handleSessionIdChange}
-      />
+    <div style={{
+      minHeight: '100vh',
+      width: '100%',
+      background: '#f7fafc',
+      padding: '20px',
+      overflow: 'auto'
+    }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <ConversationalChat
+          token={token}
+          apiUrl={apiUrl}
+          onComplete={handleChatComplete}
+          onSessionIdChange={handleSessionIdChange}
+        />
+      </div>
     </div>
   );
 };
