@@ -20,6 +20,9 @@ interface Referee {
   submitted_at: string | null;
   last_contacted_at: string | null;
   initial_sent_at: string | null;
+  consent_signature?: string | null;
+  consent_signed_at?: string | null;
+  consent_agreed?: boolean;
 }
 
 interface RequestWithReferees {
@@ -804,6 +807,277 @@ export const RequestList: React.FC<RequestListProps> = ({
 
       // Save PDF
       const fileName = `Authorization_${editingCandidate.candidate_first_name}_${editingCandidate.candidate_last_name}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('❌ Failed to generate PDF. Please try again or contact support.');
+    }
+  };
+
+  const handleDownloadRefereeAuthorization = async () => {
+    if (!editingReferee) return;
+
+    const hasConsent = editingReferee.consent_agreed && editingReferee.consent_signature;
+
+    if (!hasConsent) {
+      alert('⚠️ This referee has not completed the consent form yet.');
+      return;
+    }
+
+    try {
+      // Dynamically import jsPDF
+      const { jsPDF } = await import('jspdf');
+
+      const signedDate = editingReferee.consent_signed_at
+        ? new Date(editingReferee.consent_signed_at).toLocaleString('en-NZ', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Pacific/Auckland'
+          })
+        : 'N/A';
+
+      const generatedDate = new Date().toLocaleString('en-NZ', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Pacific/Auckland'
+      });
+
+      // Find the request this referee belongs to
+      const request = requestsWithReferees.find(req =>
+        req.referees.some(ref => ref.id === editingReferee.id)
+      );
+
+      const candidateName = request
+        ? `${request.candidate_first_name} ${request.candidate_last_name}`
+        : 'the candidate';
+      const position = request?.position_applied_for || 'the position';
+
+      // Create PDF
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
+      let yPos = 20;
+
+      // Header
+      doc.setFillColor(139, 92, 246); // Purple color for referee docs
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Referee Consent Form', pageWidth / 2, 18, { align: 'center' });
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Official Record of Referee Authorization', pageWidth / 2, 28, { align: 'center' });
+
+      yPos = 55;
+      doc.setTextColor(0, 0, 0);
+
+      // Referee Information Section
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(31, 41, 55);
+      doc.text('Referee Information', margin, yPos);
+      yPos += 10;
+
+      // Draw light purple box for referee info
+      doc.setFillColor(249, 250, 251);
+      doc.rect(margin, yPos - 5, contentWidth, 50 + (editingReferee.phone ? 10 : 0) + (editingReferee.company ? 10 : 0), 'F');
+      doc.setDrawColor(139, 92, 246);
+      doc.setLineWidth(2);
+      doc.line(margin, yPos - 5, margin, yPos + 45 + (editingReferee.phone ? 10 : 0) + (editingReferee.company ? 10 : 0));
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+
+      doc.text('Full Name:', margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(`${editingReferee.first_name} ${editingReferee.last_name}`, margin + 5, yPos + 5);
+      yPos += 15;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+      doc.text('Email:', margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(editingReferee.email, margin + 5, yPos + 5);
+      yPos += 15;
+
+      if (editingReferee.phone) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(55, 65, 81);
+        doc.text('Phone:', margin + 5, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(editingReferee.phone, margin + 5, yPos + 5);
+        yPos += 15;
+      }
+
+      if (editingReferee.company) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(55, 65, 81);
+        doc.text('Company:', margin + 5, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(editingReferee.company, margin + 5, yPos + 5);
+        yPos += 15;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+      doc.text('Relationship:', margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(editingReferee.relationship, margin + 5, yPos + 5);
+      yPos += 20;
+
+      // Reference Details Section
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(31, 41, 55);
+      doc.text('Reference Details', margin, yPos);
+      yPos += 10;
+
+      // Draw light purple box
+      doc.setFillColor(249, 250, 251);
+      doc.rect(margin, yPos - 5, contentWidth, 30, 'F');
+      doc.setDrawColor(139, 92, 246);
+      doc.line(margin, yPos - 5, margin, yPos + 25);
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+
+      doc.text('Candidate:', margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(candidateName, margin + 5, yPos + 5);
+      yPos += 15;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+      doc.text('Position:', margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(position, margin + 5, yPos + 5);
+      yPos += 20;
+
+      // Consent Details Section
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(31, 41, 55);
+      doc.text('Consent Details', margin, yPos);
+      yPos += 10;
+
+      // Draw light purple box
+      doc.setFillColor(249, 250, 251);
+      doc.rect(margin, yPos - 5, contentWidth, 30, 'F');
+      doc.setDrawColor(139, 92, 246);
+      doc.line(margin, yPos - 5, margin, yPos + 25);
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+
+      doc.text('Date Signed:', margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(signedDate, margin + 5, yPos + 5);
+      yPos += 15;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81);
+      doc.text('Status:', margin + 5, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(21, 128, 61);
+      doc.text('✓ Consent Given', margin + 5, yPos + 5);
+      yPos += 20;
+
+      // Consent Statement Section
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(31, 41, 55);
+      doc.text('Consent Statement', margin, yPos);
+      yPos += 10;
+
+      // Draw purple box for consent statement
+      doc.setFillColor(243, 232, 255);
+      doc.rect(margin, yPos - 5, contentWidth, 48, 'F');
+      doc.setDrawColor(139, 92, 246);
+      doc.setLineWidth(2);
+      doc.line(margin, yPos - 5, margin, yPos + 43);
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('The referee has consented to the following:', margin + 5, yPos);
+      yPos += 7;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      const consentItems = [
+        `• Providing a professional reference for ${candidateName}`,
+        '• Sharing information about their work history and performance',
+        '• Acknowledging that their responses may be used in hiring decisions',
+        '• Understanding that this reference is confidential'
+      ];
+
+      consentItems.forEach(item => {
+        doc.text(item, margin + 5, yPos);
+        yPos += 7;
+      });
+      yPos += 8;
+
+      // Signature Section
+      if (editingReferee.consent_signature) {
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(31, 41, 55);
+        doc.text('Electronic Signature', margin, yPos);
+        yPos += 10;
+
+        // Draw light purple box for signature
+        doc.setFillColor(245, 243, 255);
+        doc.rect(margin, yPos - 5, contentWidth, 25, 'F');
+        doc.setDrawColor(139, 92, 246);
+        doc.setLineWidth(1);
+        doc.rect(margin, yPos - 5, contentWidth, 25);
+
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(139, 92, 246);
+        doc.text(editingReferee.consent_signature, margin + 5, yPos + 5);
+        yPos += 12;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(107, 114, 128);
+        doc.text(`Signed electronically on ${signedDate}`, margin + 5, yPos + 5);
+        yPos += 15;
+      }
+
+      // Footer
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.5);
+      doc.line(margin, 270, pageWidth - margin, 270);
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(107, 114, 128);
+      doc.text(`This document was generated on ${generatedDate}`, pageWidth / 2, 277, { align: 'center' });
+      doc.text('Reference Check System - Official Referee Consent Record', pageWidth / 2, 282, { align: 'center' });
+
+      // Save PDF
+      const fileName = `Referee_Consent_${editingReferee.first_name}_${editingReferee.last_name}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
 
     } catch (error) {
@@ -1647,6 +1921,57 @@ export const RequestList: React.FC<RequestListProps> = ({
                 Where you worked together (or context for personal references)
               </span>
               </div>
+
+            {/* Referee Consent Information */}
+            {editingReferee.consent_agreed && editingReferee.consent_signature && (
+              <div style={{
+                marginBottom: '24px',
+                padding: '15px',
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #86efac',
+                borderRadius: '6px'
+              }}>
+                <h3 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: '600', color: '#166534' }}>
+                  ✓ Consent Form Completed
+                </h3>
+                {editingReferee.consent_signed_at && (
+                  <p style={{ margin: '5px 0', fontSize: '13px', color: '#166534' }}>
+                    <strong>Date Signed:</strong> {new Date(editingReferee.consent_signed_at).toLocaleString('en-NZ', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      timeZone: 'Pacific/Auckland'
+                    })}
+                  </p>
+                )}
+                {editingReferee.consent_signature && (
+                  <p style={{ margin: '5px 0', fontSize: '13px', color: '#166534' }}>
+                    <strong>Signature:</strong> {editingReferee.consent_signature}
+                  </p>
+                )}
+                <button
+                  onClick={handleDownloadRefereeAuthorization}
+                  style={{
+                    marginTop: '10px',
+                    padding: '8px 16px',
+                    backgroundColor: '#8b5cf6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  📄 Download Consent Form
+                </button>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button
