@@ -17,13 +17,14 @@ import { ConversationalReview } from './ConversationalReview';
 interface ConversationalReferenceCheckProps {
   token: string;
   apiUrl?: string;
+  onComplete?: () => void;
 }
 
 type Step = 'authorization' | 'chat' | 'review' | 'complete';
 
 export const ConversationalReferenceCheck: React.FC<
   ConversationalReferenceCheckProps
-> = ({ token, apiUrl = 'http://localhost:5001/api' }) => {
+> = ({ token, apiUrl = 'http://localhost:5001/api', onComplete }) => {
   const [currentStep, setCurrentStep] = useState<Step>('authorization');
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -133,9 +134,28 @@ export const ConversationalReferenceCheck: React.FC<
           </p>
         </div>
 
-        <p style={{ margin: 0, fontSize: '14px', color: '#9ca3af' }}>
-          You can now close this window.
-        </p>
+        {onComplete ? (
+          <button
+            onClick={onComplete}
+            style={{
+              marginTop: '24px',
+              padding: '12px 24px',
+              backgroundColor: '#3b82f6',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '500',
+              cursor: 'pointer',
+            }}
+          >
+            ← Back to All Requests
+          </button>
+        ) : (
+          <p style={{ margin: 0, fontSize: '14px', color: '#9ca3af' }}>
+            You can now close this window.
+          </p>
+        )}
       </div>
     );
   }

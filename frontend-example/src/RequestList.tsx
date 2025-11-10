@@ -971,14 +971,16 @@ export const RequestList: React.FC<RequestListProps> = ({
 
   // Show conversation view if active
   if (showingConversation) {
+    const handleConversationComplete = () => {
+      setShowingConversation(null);
+      // Refresh the list to show updated completion status
+      fetchRequestsWithDetails(false);
+    };
+
     return (
       <div>
         <button
-          onClick={() => {
-            setShowingConversation(null);
-            // Refresh the list to show updated completion status
-            fetchRequestsWithDetails(false);
-          }}
+          onClick={handleConversationComplete}
           style={{
             margin: '20px',
             padding: '10px 20px',
@@ -994,6 +996,7 @@ export const RequestList: React.FC<RequestListProps> = ({
         <ConversationalReferenceCheck
           token={showingConversation.token}
           apiUrl={apiUrl}
+          onComplete={handleConversationComplete}
         />
       </div>
     );

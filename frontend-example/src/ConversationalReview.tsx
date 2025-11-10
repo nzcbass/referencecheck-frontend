@@ -119,13 +119,25 @@ export const ConversationalReview: React.FC<ConversationalReviewProps> = ({
         throw new Error(data.error || 'Failed to save revision');
       }
 
-      // Update local state
+      // Update local state - update both polished_answer and conversation_turns
       setReviewItems((prev) =>
-        prev.map((item) =>
-          item.answer_id === answerId
-            ? { ...item, polished_answer: editValue.trim() }
-            : item
-        )
+        prev.map((item) => {
+          if (item.answer_id === answerId) {
+            // Update the conversation turns to reflect the new answer
+            const updatedConversationTurns = item.conversation_turns?.map((turn) =>
+              turn.type === 'user_answer'
+                ? { ...turn, content: editValue.trim() }
+                : turn
+            ) || [];
+
+            return {
+              ...item,
+              polished_answer: editValue.trim(),
+              conversation_turns: updatedConversationTurns.length > 0 ? updatedConversationTurns : item.conversation_turns
+            };
+          }
+          return item;
+        })
       );
 
       setEditingId(null);
