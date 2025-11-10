@@ -11,6 +11,7 @@ interface Referee {
   email: string;
   phone_number: string;
   relationship: string;
+  company: string;
 }
 
 interface AddRefereesProps {
@@ -33,6 +34,7 @@ export const AddReferees: React.FC<AddRefereesProps> = ({
       email: '',
       phone_number: '',
       relationship: '',
+      company: '',
     },
   ]);
 
@@ -48,6 +50,7 @@ export const AddReferees: React.FC<AddRefereesProps> = ({
         email: '',
         phone_number: '',
         relationship: '',
+        company: '',
       },
     ]);
   };
@@ -135,6 +138,7 @@ export const AddReferees: React.FC<AddRefereesProps> = ({
           email: '',
           phone_number: '',
           relationship: '',
+          company: '',
         },
       ]);
     } catch (error) {
@@ -256,6 +260,23 @@ export const AddReferees: React.FC<AddRefereesProps> = ({
               {errors[`${index}_relationship`] && (
                 <span className="error-message">{errors[`${index}_relationship`]}</span>
               )}
+            </div>
+
+            {/* Company/Organization */}
+            <div className="form-group">
+              <label htmlFor={`company_${index}`}>
+                Company/Organization
+              </label>
+              <input
+                type="text"
+                id={`company_${index}`}
+                value={referee.company}
+                onChange={(e) => handleRefereeChange(index, 'company', e.target.value)}
+                placeholder="e.g., Google, Acme Corp, or Personal Friend"
+              />
+              <span className="help-text" style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', display: 'block' }}>
+                Where you worked together (or context for personal references)
+              </span>
             </div>
           </div>
         ))}

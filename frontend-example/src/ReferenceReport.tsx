@@ -20,6 +20,7 @@ interface ReferenceData {
     email: string;
     phone_number: string | null;
     relationship: string;
+    company: string | null;
   };
   submission: {
     id: string;
@@ -236,6 +237,12 @@ export const ReferenceReport: React.FC<ReferenceReportProps> = ({
                 <span className="info-label">Relationship:</span>
                 <span className="info-value">{data.referee.relationship}</span>
               </div>
+              {data.referee.company && (
+                <div className="info-item">
+                  <span className="info-label">Company:</span>
+                  <span className="info-value">{data.referee.company}</span>
+                </div>
+              )}
               <div className="info-item">
                 <span className="info-label">Email:</span>
                 <span className="info-value">{data.referee.email}</span>
