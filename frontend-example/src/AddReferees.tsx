@@ -40,6 +40,7 @@ export const AddReferees: React.FC<AddRefereesProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [sendImmediately, setSendImmediately] = useState(true);
 
   const addRefereeField = () => {
     setReferees([
@@ -112,7 +113,12 @@ export const AddReferees: React.FC<AddRefereesProps> = ({
     setErrors({});
 
     try {
-      const response = await fetch(`${apiUrl}/requests/${requestId}/referees`, {
+      // Use different endpoint based on sendImmediately setting
+      const endpoint = sendImmediately
+        ? `${apiUrl}/requests/${requestId}/referees/send`
+        : `${apiUrl}/requests/${requestId}/referees`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -297,10 +303,29 @@ export const AddReferees: React.FC<AddRefereesProps> = ({
           </div>
         )}
 
+        {/* Send Immediately Checkbox */}
+        <div style={{ marginBottom: '20px', padding: '15px', background: '#f0f9ff', border: '1px solid #bfdbfe', borderRadius: '6px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={sendImmediately}
+              onChange={(e) => setSendImmediately(e.target.checked)}
+              style={{ marginRight: '10px', width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '14px', lineHeight: '1.5' }}>
+              <strong>Send invitation emails immediately</strong>
+              <br />
+              <span style={{ color: '#6b7280', fontSize: '13px' }}>
+                Automatically email referees after adding them (recommended)
+              </span>
+            </span>
+          </label>
+        </div>
+
         {/* Submit Buttons */}
         <div className="form-actions">
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? 'Adding Referees...' : `Add ${referees.length} Referee${referees.length > 1 ? 's' : ''}`}
+            {loading ? (sendImmediately ? 'Adding & Sending...' : 'Adding Referees...') : (sendImmediately ? `Add & Send to ${referees.length} Referee${referees.length > 1 ? 's' : ''}` : `Add ${referees.length} Referee${referees.length > 1 ? 's' : ''}`)}
           </button>
         </div>
       </form>
