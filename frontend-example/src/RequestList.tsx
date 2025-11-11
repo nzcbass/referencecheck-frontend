@@ -1661,74 +1661,80 @@ export const RequestList: React.FC<RequestListProps> = ({
                           {openRefereeMenuId === referee.id && (
                             <div className={`actions-menu ${(menuPositions[referee.id] || 'down') === 'up' ? 'actions-menu-up' : ''}`}>
                               {/* SECTION 1: Referee Actions (authorization-dependent) */}
-                              {req.authorization_status === 'authorized' || req.authorization_status === 'verbal' ? (
+                              {/* Hide referee actions if referee declined */}
+                              {referee.status !== 'declined' && (
                                 <>
-                                  {/* Authorized - Show referee-specific actions */}
-                                  {(referee.has_completed || referee.status === 'completed') ? (
-                                    <button
-                                      onClick={() => {
-                                        setOpenRefereeMenuId(null);
-                                        // Navigate to professional report page
-                                        window.location.href = `/report/${req.id}/referee/${referee.id}`;
-                                      }}
-                                      style={{
-                                        color: '#6366f1',
-                                        borderBottom: '1px solid #e5e7eb',
-                                        paddingBottom: '8px',
-                                        marginBottom: '8px'
-                                      }}
-                                    >
-                                      👁️ View Report
-                                    </button>
+                                  {req.authorization_status === 'authorized' || req.authorization_status === 'verbal' ? (
+                                    <>
+                                      {/* Authorized - Show referee-specific actions */}
+                                      {(referee.has_completed || referee.status === 'completed') ? (
+                                        <button
+                                          onClick={() => {
+                                            setOpenRefereeMenuId(null);
+                                            // Navigate to professional report page
+                                            window.location.href = `/report/${req.id}/referee/${referee.id}`;
+                                          }}
+                                          style={{
+                                            color: '#6366f1',
+                                            borderBottom: '1px solid #e5e7eb',
+                                            paddingBottom: '8px',
+                                            marginBottom: '8px'
+                                          }}
+                                        >
+                                          👁️ View Report
+                                        </button>
+                                      ) : (
+                                        <>
+                                          <button
+                                            onClick={() => {
+                                              setOpenRefereeMenuId(null);
+                                              handleSendReminder(req.id, referee.id, `${referee.first_name} ${referee.last_name}`);
+                                            }}
+                                            style={{ color: '#2563eb' }}
+                                          >
+                                            📧 Send Reminder
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setOpenRefereeMenuId(null);
+                                              handleCompletePhoneReference(req.id, referee.id, `${referee.first_name} ${referee.last_name}`);
+                                            }}
+                                            style={{
+                                              color: '#059669',
+                                              borderBottom: '1px solid #e5e7eb',
+                                              paddingBottom: '8px',
+                                              marginBottom: '8px'
+                                            }}
+                                          >
+                                            📞 Complete Over Phone
+                                          </button>
+                                        </>
+                                      )}
+                                    </>
                                   ) : (
                                     <>
-                                      <button
-                                        onClick={() => {
-                                          setOpenRefereeMenuId(null);
-                                          handleSendReminder(req.id, referee.id, `${referee.first_name} ${referee.last_name}`);
-                                        }}
-                                        style={{ color: '#2563eb' }}
-                                      >
-                                        📧 Send Reminder
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setOpenRefereeMenuId(null);
-                                          handleCompletePhoneReference(req.id, referee.id, `${referee.first_name} ${referee.last_name}`);
-                                        }}
-                                        style={{
-                                          color: '#059669',
-                                          borderBottom: '1px solid #e5e7eb',
-                                          paddingBottom: '8px',
-                                          marginBottom: '8px'
-                                        }}
-                                      >
-                                        📞 Complete Over Phone
-                                      </button>
+                                      {/* Not Authorized - Show message only */}
+                                      <div style={{
+                                        padding: '8px 12px',
+                                        color: '#dc2626',
+                                        fontSize: '13px',
+                                        textAlign: 'center',
+                                        borderBottom: '1px solid #e5e7eb',
+                                        marginBottom: '8px'
+                                      }}>
+                                        🔒 Authorization Required
+                                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                                          Candidate must authorize first
+                                        </div>
+                                      </div>
                                     </>
                                   )}
-                                </>
-                              ) : (
-                                <>
-                                  {/* Not Authorized - Show message only */}
-                                  <div style={{
-                                    padding: '8px 12px',
-                                    color: '#dc2626',
-                                    fontSize: '13px',
-                                    textAlign: 'center',
-                                    borderBottom: '1px solid #e5e7eb',
-                                    marginBottom: '8px'
-                                  }}>
-                                    🔒 Authorization Required
-                                    <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-                                      Candidate must authorize first
-                                    </div>
-                                  </div>
                                 </>
                               )}
 
                               {/* SECTION 2: Candidate-Level Actions (first referee row only) */}
-                              {index === 0 && (
+                              {/* Hide authorization actions if referee declined */}
+                              {index === 0 && referee.status !== 'declined' && (
                                 <>
                                   {/* Authorization Actions (if not authorized) */}
                                   {(!req.authorization_status || req.authorization_status === 'pending') && (
