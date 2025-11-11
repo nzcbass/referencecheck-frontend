@@ -456,7 +456,7 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
                       type="text"
                       value={editedTemplate.name}
                       onChange={(e) => setEditedTemplate({ ...editedTemplate, name: e.target.value })}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }}
                     />
                   </div>
 
@@ -465,7 +465,7 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
                     <textarea
                       value={editedTemplate.description || ''}
                       onChange={(e) => setEditedTemplate({ ...editedTemplate, description: e.target.value })}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px', boxSizing: 'border-box' }}
                     />
                   </div>
 
@@ -474,7 +474,7 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
                     <select
                       value={editedTemplate.category}
                       onChange={(e) => setEditedTemplate({ ...editedTemplate, category: e.target.value })}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }}
                     >
                       <option value="general">General</option>
                       <option value="management">Management</option>
@@ -505,7 +505,7 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
                                   schema_json: { ...editedTemplate.schema_json, fields: newFields }
                                 });
                               }}
-                              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }}
+                              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px', boxSizing: 'border-box' }}
                             />
                             <div style={{ marginTop: '8px', display: 'flex', gap: '12px', alignItems: 'center' }}>
                               <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
