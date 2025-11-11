@@ -45,6 +45,9 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
   const [deleteConfirm, setDeleteConfirm] = useState<{ templateId: string; templateName: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTemplate, setEditedTemplate] = useState<Template | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -86,6 +89,8 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
 
   const handlePreview = (template: Template) => {
     setSelectedTemplate(template);
+    setEditedTemplate(JSON.parse(JSON.stringify(template))); // Deep copy
+    setIsEditing(template.usage_count === 0 && !template.is_global);
     setShowPreview(true);
   };
 
@@ -116,6 +121,8 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
   const handleClosePreview = () => {
     setShowPreview(false);
     setSelectedTemplate(null);
+    setEditedTemplate(null);
+    setIsEditing(false);
   };
 
   const handleSelectTemplate = (template: Template) => {
@@ -145,9 +152,50 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
     };
   }, [openMenuId]);
 
+  const handleSaveTemplate = async () => {
+    if (!editedTemplate) return;
+
+    try {
+      setSaving(true);
+      setError('');
+
+      const response = await fetch(`${apiUrl}/templates/${editedTemplate.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          name: editedTemplate.name,
+          description: editedTemplate.description,
+          category: editedTemplate.category,
+          schema_json: editedTemplate.schema_json
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save template');
+      }
+
+      // Show success message
+      alert('✅ Template updated successfully!');
+
+      // Refresh templates and close modal
+      await fetchTemplates();
+      handleClosePreview();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save template';
+      setError(errorMessage);
+      alert(`❌ Error: ${errorMessage}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleClone = async (template: Template) => {
     setOpenMenuId(null);
-    
+
     try {
       setError('');
       const response = await fetch(`${apiUrl}/templates/${template.id}/clone`, {
@@ -167,10 +215,10 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
       }
 
       const result = await response.json();
-      
+
       // Show success message
       alert(`✅ Template duplicated successfully!\n\nNew template: "${result.template.name}"`);
-      
+
       // Refresh templates to show the new copy
       await fetchTemplates();
     } catch (err) {
@@ -292,6 +340,7 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
               <th>Category</th>
               <th>Description</th>
               <th style={{ textAlign: 'center' }}>Questions</th>
+              <th style={{ textAlign: 'center' }}>Used</th>
               <th style={{ textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
@@ -323,6 +372,12 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
                 </td>
                 <td style={{ textAlign: 'center' }}>
                   <strong>{template.schema_json.fields.length}</strong>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <strong>
+                    {template.usage_count}
+                    {template.usage_count >= 1 && ' 🔒'}
+                  </strong>
                 </td>
                 <td style={{ textAlign: 'center' }}>
                   <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -359,7 +414,7 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
                           }}
                           style={{ color: '#8b5cf6' }}
                         >
-                          👁️ Preview Questions
+                          {template.usage_count === 0 ? '✏️ Preview/Edit' : '👁️ Preview'}
                         </button>
                         {!template.is_global && (
                           <button
@@ -382,63 +437,182 @@ export function TemplateLibrary({ apiUrl, userId, onSelectTemplate, onCreateNew 
         </table>
       </div>
 
-      {/* Template Preview Modal */}
-      {showPreview && selectedTemplate && (
+      {/* Template Preview/Edit Modal */}
+      {showPreview && selectedTemplate && editedTemplate && (
         <div className="modal-overlay" onClick={handleClosePreview}>
           <div className="modal-content template-preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{selectedTemplate.name}</h2>
+              <h2>{isEditing ? 'Edit Template' : selectedTemplate.name}</h2>
               <button onClick={handleClosePreview} className="btn-close">×</button>
             </div>
 
             <div className="modal-body">
-              <div className="preview-metadata">
-                <span className={`badge ${getCategoryBadgeClass(selectedTemplate.category)}`}>
-                  {getCategoryLabel(selectedTemplate.category)}
-                </span>
-                {selectedTemplate.is_global && (
-                  <span className="badge badge-global">Global Template</span>
-                )}
-              </div>
-
-              <p className="preview-description">{selectedTemplate.description}</p>
-
-              <div className="preview-questions">
-                <h3>Questions ({selectedTemplate.schema_json.fields.length})</h3>
-                
-                {selectedTemplate.schema_json.fields.map((field, index) => (
-                  <div key={field.id} className="preview-question">
-                    <div className="question-number">{index + 1}.</div>
-                    <div className="question-content">
-                      <p className="question-text">{field.text}</p>
-                      <div className="question-meta">
-                        {field.required && (
-                          <span className="badge badge-required">Required</span>
-                        )}
-                        <span className="badge badge-type">
-                          {field.type === 'textarea' ? 'Long Answer' : 
-                           field.type === 'scale' ? 'Rating Scale' : 'Short Answer'}
-                        </span>
-                      </div>
-                    </div>
+              {isEditing ? (
+                <>
+                  {/* Edit Mode */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Template Name *</label>
+                    <input
+                      type="text"
+                      value={editedTemplate.name}
+                      onChange={(e) => setEditedTemplate({ ...editedTemplate, name: e.target.value })}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    />
                   </div>
-                ))}
-              </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Description</label>
+                    <textarea
+                      value={editedTemplate.description || ''}
+                      onChange={(e) => setEditedTemplate({ ...editedTemplate, description: e.target.value })}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Category *</label>
+                    <select
+                      value={editedTemplate.category}
+                      onChange={(e) => setEditedTemplate({ ...editedTemplate, category: e.target.value })}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                    >
+                      <option value="general">General</option>
+                      <option value="management">Management</option>
+                      <option value="technical">Technical</option>
+                      <option value="sales">Sales</option>
+                      <option value="entry_level">Entry Level</option>
+                      <option value="executive">Executive</option>
+                      <option value="academic">Academic</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+
+                  <div className="preview-questions">
+                    <h3>Questions ({editedTemplate.schema_json.fields.length})</h3>
+
+                    {editedTemplate.schema_json.fields.map((field, index) => (
+                      <div key={field.id} className="preview-question" style={{ marginBottom: '16px', padding: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                          <div className="question-number" style={{ minWidth: '24px' }}>{index + 1}.</div>
+                          <div style={{ flex: 1 }}>
+                            <textarea
+                              value={field.text}
+                              onChange={(e) => {
+                                const newFields = [...editedTemplate.schema_json.fields];
+                                newFields[index] = { ...field, text: e.target.value };
+                                setEditedTemplate({
+                                  ...editedTemplate,
+                                  schema_json: { ...editedTemplate.schema_json, fields: newFields }
+                                });
+                              }}
+                              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }}
+                            />
+                            <div style={{ marginTop: '8px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={field.required}
+                                  onChange={(e) => {
+                                    const newFields = [...editedTemplate.schema_json.fields];
+                                    newFields[index] = { ...field, required: e.target.checked };
+                                    setEditedTemplate({
+                                      ...editedTemplate,
+                                      schema_json: { ...editedTemplate.schema_json, fields: newFields }
+                                    });
+                                  }}
+                                />
+                                Required
+                              </label>
+                              <select
+                                value={field.type || 'text'}
+                                onChange={(e) => {
+                                  const newFields = [...editedTemplate.schema_json.fields];
+                                  newFields[index] = { ...field, type: e.target.value };
+                                  setEditedTemplate({
+                                    ...editedTemplate,
+                                    schema_json: { ...editedTemplate.schema_json, fields: newFields }
+                                  });
+                                }}
+                                style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                              >
+                                <option value="text">Short Answer</option>
+                                <option value="textarea">Long Answer</option>
+                                <option value="scale">Rating Scale</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Preview Mode (Read-Only) */}
+                  <div className="preview-metadata">
+                    <span className={`badge ${getCategoryBadgeClass(selectedTemplate.category)}`}>
+                      {getCategoryLabel(selectedTemplate.category)}
+                    </span>
+                    {selectedTemplate.is_global && (
+                      <span className="badge badge-global">Global Template</span>
+                    )}
+                    {selectedTemplate.usage_count >= 1 && (
+                      <span className="badge badge-locked" style={{ background: '#dc2626', color: 'white' }}>
+                        🔒 Locked ({selectedTemplate.usage_count} completed)
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="preview-description">{selectedTemplate.description}</p>
+
+                  <div className="preview-questions">
+                    <h3>Questions ({selectedTemplate.schema_json.fields.length})</h3>
+
+                    {selectedTemplate.schema_json.fields.map((field, index) => (
+                      <div key={field.id} className="preview-question">
+                        <div className="question-number">{index + 1}.</div>
+                        <div className="question-content">
+                          <p className="question-text">{field.text}</p>
+                          <div className="question-meta">
+                            {field.required && (
+                              <span className="badge badge-required">Required</span>
+                            )}
+                            <span className="badge badge-type">
+                              {field.type === 'textarea' ? 'Long Answer' :
+                               field.type === 'scale' ? 'Rating Scale' : 'Short Answer'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="modal-footer">
               <button onClick={handleClosePreview} className="btn-secondary">
-                Close
+                {isEditing ? 'Cancel' : 'Close'}
               </button>
-              <button
-                onClick={() => {
-                  handleClosePreview();
-                  handleSelectTemplate(selectedTemplate);
-                }}
-                className="btn-primary"
-              >
-                Use This Template
-              </button>
+              {isEditing ? (
+                <button
+                  onClick={handleSaveTemplate}
+                  className="btn-primary"
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    handleClosePreview();
+                    handleSelectTemplate(selectedTemplate);
+                  }}
+                  className="btn-primary"
+                >
+                  Use This Template
+                </button>
+              )}
             </div>
           </div>
         </div>
