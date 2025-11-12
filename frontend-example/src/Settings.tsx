@@ -307,7 +307,7 @@ Best regards`}
             }}
           />
           <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>
-            Not configurable at this stage
+            <strong>Not configurable at this stage</strong>
           </p>
         </div>
       </div>
@@ -345,7 +345,7 @@ Best regards`}
             }}
           />
           <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#6b7280', fontStyle: 'italic' }}>
-            Not configurable at this stage
+            <strong>Not configurable at this stage</strong>
           </p>
         </div>
       </div>
