@@ -37,6 +37,7 @@ export const Settings: React.FC<SettingsProps> = ({
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -94,6 +95,45 @@ export const Settings: React.FC<SettingsProps> = ({
       setError(errorMessage);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDownloadRefereeReport = async () => {
+    setError('');
+    setSuccessMessage('');
+    setDownloadingReport(true);
+
+    try {
+      const response = await fetch(`${apiUrl}/referees/export`);
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to download referee report';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          console.warn('Unable to parse referee export error', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'referees.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setSuccessMessage('📥 Referee report download started.');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download referee report';
+      setError(errorMessage);
+    } finally {
+      setDownloadingReport(false);
     }
   };
 
@@ -369,6 +409,27 @@ Best regards`}
       {/* Action Buttons */}
       <div style={{ display: 'flex', gap: '12px' }}>
         <button
+          onClick={handleDownloadRefereeReport}
+          disabled={downloadingReport}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: downloadingReport ? '#9ca3af' : '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: downloadingReport ? 'not-allowed' : 'pointer',
+            fontSize: '16px',
+            fontWeight: '600',
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          {downloadingReport ? 'Preparing CSV...' : '⬇️ Download Referee Report'}
+        </button>
+        <button
           onClick={handleSave}
           disabled={saving || !settings.contact_name || !settings.contact_mobile || !settings.contact_email || !settings.company_name}
           style={{
@@ -380,7 +441,7 @@ Best regards`}
             cursor: (settings.contact_name && settings.contact_mobile && settings.contact_email && settings.company_name && !saving) ? 'pointer' : 'not-allowed',
             fontSize: '16px',
             fontWeight: '600',
-            width: '100%',
+            flex: 1,
           }}
         >
           {saving ? 'Saving...' : '💾 Save Settings'}
