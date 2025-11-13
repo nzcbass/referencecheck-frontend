@@ -528,7 +528,7 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
               cursor: 'pointer',
             }}
           >
-            Review & Submit Answers
+            Review and Edit Your Answers
           </button>
         </div>
       )}
