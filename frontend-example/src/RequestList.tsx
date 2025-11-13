@@ -3,7 +3,7 @@
  * Display all reference requests with referee details and authorization workflow
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ReferenceReport } from './ReferenceReport';
 import { ConversationalReferenceCheck } from './ConversationalReferenceCheck';
 
@@ -76,6 +76,8 @@ export const RequestList: React.FC<RequestListProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [openRefereeMenuId, setOpenRefereeMenuId] = useState<string | null>(null);
   const [menuPositions, setMenuPositions] = useState<Record<string, 'up' | 'down'>>({});
+  const menuButtonRefs = useRef<Record<string, HTMLElement | null>>({});
+  const menuContentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [showingReport, setShowingReport] = useState<{ requestId: string; refereeId: string } | null>(null);
   const [showingConversation, setShowingConversation] = useState<{ token: string } | null>(null);
   const [sortColumn, setSortColumn] = useState<string>('start_date');
@@ -504,6 +506,46 @@ export const RequestList: React.FC<RequestListProps> = ({
     }
   };
 
+  const updateMenuPlacement = useCallback((menuId: string) => {
+    const button = menuButtonRefs.current[menuId];
+    const menu = menuContentRefs.current[menuId];
+    if (!button || !menu) return;
+
+    const buttonRect = button.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - buttonRect.bottom;
+    const spaceAbove = buttonRect.top;
+    const willOverflowBelow = menuRect.height > spaceBelow;
+    const shouldOpenUp = willOverflowBelow && spaceAbove >= spaceBelow;
+
+    setMenuPositions(prev => {
+      const newDirection: 'up' | 'down' = shouldOpenUp ? 'up' : 'down';
+      if (prev[menuId] === newDirection) return prev;
+      return {
+        ...prev,
+        [menuId]: newDirection,
+      };
+    });
+  }, []);
+
+  const handleMenuButtonRef = useCallback((id: string, element: HTMLElement | null) => {
+    if (element) {
+      menuButtonRefs.current[id] = element;
+    } else {
+      delete menuButtonRefs.current[id];
+    }
+  }, []);
+
+  const handleMenuContentRef = useCallback((id: string, element: HTMLDivElement | null) => {
+    if (element) {
+      menuContentRefs.current[id] = element;
+      requestAnimationFrame(() => updateMenuPlacement(id));
+    } else {
+      delete menuContentRefs.current[id];
+    }
+  }, [updateMenuPlacement]);
+
   const handleRefereeMenuClick = (refereeId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     if (openRefereeMenuId === refereeId) {
@@ -511,25 +553,30 @@ export const RequestList: React.FC<RequestListProps> = ({
       return;
     }
 
-    // Calculate if menu should appear above or below for THIS specific button
-    const button = event.currentTarget as HTMLElement;
-    const buttonRect = button.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const spaceBelow = viewportHeight - buttonRect.bottom;
-    const spaceAbove = buttonRect.top;
-    const menuHeight = 400; // Approximate menu height (increased for safety)
-
-    // Store position for this specific menu
-    // Prefer opening upward if: insufficient space below, in bottom 50% of viewport, or better space above
-    const isNearBottom = buttonRect.bottom > viewportHeight * 0.5;
-    const shouldOpenUp = spaceBelow < menuHeight || isNearBottom || (spaceAbove > spaceBelow && spaceAbove > menuHeight);
     setMenuPositions(prev => ({
       ...prev,
-      [refereeId]: shouldOpenUp ? 'up' : 'down'
+      [refereeId]: prev[refereeId] || 'down',
     }));
-    
+
     setOpenRefereeMenuId(refereeId);
   };
+
+  useEffect(() => {
+    if (!openRefereeMenuId) return;
+
+    const update = () => {
+      requestAnimationFrame(() => updateMenuPlacement(openRefereeMenuId));
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [openRefereeMenuId, updateMenuPlacement]);
 
   const handleSaveReferee = async () => {
     if (!editingReferee) return;
@@ -1434,12 +1481,16 @@ export const RequestList: React.FC<RequestListProps> = ({
                         <button
                           onClick={(e) => handleRefereeMenuClick(req.id, e)}
                           className="btn-action"
+                          ref={(el) => handleMenuButtonRef(req.id, el)}
                           style={{ background: '#6366f1', color: 'white' }}
                         >
                           ⋯
                         </button>
                         {openRefereeMenuId === req.id && (
-                          <div className={`actions-menu ${(menuPositions[req.id] || 'down') === 'up' ? 'actions-menu-up' : ''}`}>
+                          <div
+                            ref={(el) => handleMenuContentRef(req.id, el)}
+                            className={`actions-menu ${(menuPositions[req.id] || 'down') === 'up' ? 'actions-menu-up' : ''}`}
+                          >
                             {/* SECTION 1: Authorization Actions (if not authorized) */}
                             {(!req.authorization_status || req.authorization_status === 'pending') && (
                               <>
@@ -1653,15 +1704,19 @@ export const RequestList: React.FC<RequestListProps> = ({
                         </td>
                         {/* Combined Actions Column */}
                         <td style={{ position: 'relative' }}>
-                        <button
+                          <button
                             onClick={(e) => handleRefereeMenuClick(referee.id, e)}
-                      className="btn-action"
+                            className="btn-action"
+                            ref={(el) => handleMenuButtonRef(referee.id, el)}
                             style={{ background: '#6366f1', color: 'white' }}
                           >
                             ⋯
                           </button>
                           {openRefereeMenuId === referee.id && (
-                            <div className={`actions-menu ${(menuPositions[referee.id] || 'down') === 'up' ? 'actions-menu-up' : ''}`}>
+                            <div
+                              ref={(el) => handleMenuContentRef(referee.id, el)}
+                              className={`actions-menu ${(menuPositions[referee.id] || 'down') === 'up' ? 'actions-menu-up' : ''}`}
+                            >
                               {/* SECTION 1: Referee Actions (authorization-dependent) */}
                               {/* Hide referee actions if referee declined */}
                               {referee.status !== 'declined' && (
