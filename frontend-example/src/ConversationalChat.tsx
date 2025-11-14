@@ -193,7 +193,7 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
           session_id: sessionId,
           question_index: currentQuestion.index,
           answer: userAnswer,
-          skip_proofreading: false,
+          skip_proofreading: true,
         }),
       });
 
@@ -205,8 +205,6 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
 
       setProgress(data.progress);
       setStatus(data.status);
-
-      let hasDelayedResponse = false;
 
       if (data.status === 'needs_clarification') {
         // Answer needs follow-up or was invalid
@@ -227,27 +225,12 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
         setCurrentQuestion(null);
         setStatus('ready_for_review');
       } else if (data.next_question) {
-        // Answer was accepted - show acknowledgment first if present
-        if (data.acknowledgment) {
-          addMessage('assistant', data.acknowledgment);
-          // Delay showing next question so responses don't appear simultaneously
-          hasDelayedResponse = true;
-          setTimeout(() => {
-            setCurrentQuestion(data.next_question);
-            addMessage('assistant', data.next_question.text);
-            setSubmitting(false);
-          }, 600);  // Reduced from 1000ms to 600ms - fast enough to feel responsive
-        } else {
-          // No acknowledgment - show next question immediately
-          setCurrentQuestion(data.next_question);
-          addMessage('assistant', data.next_question.text);
-        }
+        // Answer was accepted - immediately show the next question to keep things snappy
+        setCurrentQuestion(data.next_question);
+        addMessage('assistant', data.next_question.text);
       }
 
-      // Don't clear submitting yet if we have a delayed response
-      if (!hasDelayedResponse) {
-        setSubmitting(false);
-      }
+      setSubmitting(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       setError(errorMessage);
